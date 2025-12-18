@@ -526,7 +526,7 @@ export default function RolesAndPermissions() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            {/* <div>
               <Label htmlFor="profilePicture" className="text-xs sm:text-sm mb-2">Profile Picture (Optional)</Label>
               <Input
                 id="profilePicture"
@@ -537,7 +537,7 @@ export default function RolesAndPermissions() {
                 className="text-xs sm:text-sm"
                 disabled={isActionLoading}
               />
-            </div>
+            </div> */}
           </div>
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
             <Button
@@ -650,7 +650,7 @@ export default function RolesAndPermissions() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            {/* <div>
               <Label htmlFor="profilePicture" className="text-xs sm:text-sm mb-2">Profile Picture (Optional)</Label>
               <Input
                 id="profilePicture"
@@ -661,7 +661,7 @@ export default function RolesAndPermissions() {
                 className="text-xs sm:text-sm"
                 disabled={isActionLoading}
               />
-            </div>
+            </div> */}
           </div>
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
             <Button

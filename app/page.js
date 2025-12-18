@@ -16,7 +16,7 @@ export default function Home() {
           </CardHeader> 
         }
         <CardHeader>
-          <CardTitle>Welcome to Qist Market Admin Dashboard</CardTitle>
+          <CardTitle>Welcome to ClubPro Admin Dashboard</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 mt-2">
           <p className="text-gray-600">

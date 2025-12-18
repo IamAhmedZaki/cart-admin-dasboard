@@ -222,7 +222,7 @@ export default function AdminProfile() {
                 <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
               )}
             </div>
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label className="text-sm sm:text-base font-medium">Profile Picture (Optional)</Label>
               <div
                 {...getRootProps()}
@@ -244,7 +244,7 @@ export default function AdminProfile() {
                 )}
                 <p className="text-xs sm:text-sm text-gray-500 mt-2">Only one image allowed</p>
               </div>
-            </div>
+            </div> */}
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 type="submit"

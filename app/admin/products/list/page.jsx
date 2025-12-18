@@ -477,7 +477,7 @@ export default function Products() {
       {/* Bulk Action Buttons */}
       {selectedIds.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <Button
+          {/* <Button
             onClick={() => handleBulkAction("activate")}
             disabled={loading || isActionLoading}
             className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base"
@@ -527,7 +527,7 @@ export default function Products() {
             className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base"
           >
             Bulk Duplicate ({selectedIds.length})
-          </Button>
+          </Button> */}
           <Button
             variant="destructive"
             onClick={() => handleBulkAction("delete")}
@@ -591,7 +591,7 @@ export default function Products() {
                         />
                       </TableCell>
                       <TableCell>{row.id}</TableCell>
-                      <TableCell>{row.name}</TableCell>
+                      <TableCell>{row.name.normalize("NFC")}</TableCell>
                       <TableCell>{row.brand}</TableCell>
                       <TableCell>$ {row.regularPrice}</TableCell>
                       <TableCell>$ {row.salePrice}</TableCell>
