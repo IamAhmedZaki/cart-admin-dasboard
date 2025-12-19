@@ -61,6 +61,36 @@ export default function Sidebar() {
             
           ],
         },
+        {
+          name: 'Brands',
+          path: '/admin/products',
+          icon: Package,
+          subItems: [
+            { name: 'Create Brands', path: '/admin/brands/create' },
+            { name: 'Brands List', path: '/admin/brands/list' },
+            
+          ],
+        },
+        {
+          name: 'Models',
+          path: '/admin/products',
+          icon: Package,
+          subItems: [
+            { name: 'Create Models', path: '/admin/models/create' },
+            { name: 'Models List', path: '/admin/models/list' },
+            
+          ],
+        },
+        {
+          name: 'Product Types',
+          path: '/admin/products',
+          icon: Package,
+          subItems: [
+            { name: 'Create Product Types', path: '/admin/product-types/create' },
+            { name: 'Product Types List', path: '/admin/product-types/list' },
+            
+          ],
+        },
       ],
     },
    

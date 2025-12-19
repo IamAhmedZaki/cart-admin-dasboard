@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AlertCircle, MoreHorizontal } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner";
 import {
   Dialog,
@@ -30,32 +29,13 @@ import {
 const columns = [
   { key: "checkbox", label: "" },
   { key: "id", label: "ID" },
-  { key: "name", label: "Product Name" },
-  { key: "brand", label: "Brand" },
-  { key: "model", label: "Model" },
-  { key: "type", label: "Type" },
-  { key: "color", label: "Color" },
-  { key: "regularPrice", label: "Regular Price" },
-  { key: "salePrice", label: "Sale Price" },
-  {
-    key: "stock",
-    label: "Stock Status",
-    render: (row, { onToggleStock }) => (
-      <div className="flex items-center gap-2">
-        <Switch
-          checked={row.stock > 0}
-          onCheckedChange={(checked) => onToggleStock(row.id, checked ? 1 : 0)}
-        />
-        <span className="text-xs">
-          {row.stock > 0 ? `In Stock (${row.stock})` : "Out of Stock"}
-        </span>
-      </div>
-    ),
-  },
+  { key: "name", label: "Name" },
+  { key: "modelCount", label: "Models Count" },
+  { key: "productCount", label: "Products Count" },
   {
     key: "actions",
     label: "Actions",
-    render: (row, { onView, onDelete }) => (
+    render: (row, { onDelete }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
@@ -63,9 +43,6 @@ const columns = [
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onView(row.id)}>
-            View / Edit
-          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => onDelete(row.id)}
             className="text-red-600"
@@ -78,9 +55,9 @@ const columns = [
   },
 ];
 
-export default function Products() {
+export default function Brands() {
   const router = useRouter();
-  const [products, setProducts] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -102,11 +79,10 @@ export default function Products() {
     order: "desc",
   });
 
-  /* --------------------------- FETCH DATA ------------------------------ */
-  const fetchProducts = async () => {
+  const fetchBrands = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/products", {
+      const res = await api.get("/brands", {
         params: {
           page: pagination.currentPage,
           limit: pagination.limit,
@@ -116,44 +92,31 @@ export default function Products() {
         },
       });
 
-      setProducts(res.data.data || []);
-      setPagination(res.data.pagination || pagination);
+      setBrands(res.data.data);
+      setPagination(res.data.pagination);
     } catch (err) {
-      toast.error("Failed to fetch products");
-      console.error(err);
+      toast.error("Failed to fetch brands");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProducts();
+    fetchBrands();
   }, [pagination.currentPage, pagination.limit, filters, flag]);
 
-  /* --------------------------- BASIC ACTIONS --------------------------- */
-  const handleViewProduct = (id) => {
-    router.push(`/admin/products/${id}`);
-  };
-
-  const handleDeleteProduct = async (id) => {
-    setSingleDeleteId(id);
-    setPendingAction("delete");
-    setShowConfirmDialog(true);
-  };
-
-  const handleToggleStock = async (id, stockValue) => {
+  const handleDeleteBrand = async (id) => {
     try {
-      await api.patch(`/products/${id}`, { stock: stockValue });
-      toast.success("Stock updated");
+      await api.delete(`/brands/${id}`);
+      toast.success("Brand deleted");
       setFlag(!flag);
     } catch {
-      toast.error("Failed to update stock");
+      toast.error("Delete failed");
     }
   };
 
-  /* --------------------------- SELECTION ------------------------------- */
   const handleSelectAll = (checked) => {
-    setSelectedIds(checked ? products.map((p) => p.id) : []);
+    setSelectedIds(checked ? brands.map((b) => b.id) : []);
   };
 
   const handleSelectRow = (id, checked) => {
@@ -162,35 +125,28 @@ export default function Products() {
     );
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkAction = (action) => {
     if (selectedIds.length === 0) {
-      toast.error("No products selected");
+      toast.error("No brands selected");
       return;
     }
-    setPendingAction("delete");
+    setPendingAction(action);
     setSingleDeleteId(null);
     setShowConfirmDialog(true);
   };
 
-  /* --------------------------- CONFIRM DIALOG -------------------------- */
   const confirmBulkAction = async () => {
-    if (pendingAction !== "delete") return;
-
+    if (!pendingAction || pendingAction !== "delete") return;
     setIsActionLoading(true);
     try {
       const idsToDelete = singleDeleteId ? [singleDeleteId] : selectedIds;
-
-      await api.post("/bulk-delete-products", { ids: idsToDelete });
-
-      toast.success(
-        `${idsToDelete.length} product${idsToDelete.length > 1 ? "s" : ""} deleted successfully`
-      );
-
+      await api.post("/bulk-delete-brands", { ids: idsToDelete });
+      toast.success(`${idsToDelete.length} brand(s) deleted successfully`);
       setSelectedIds([]);
       setSingleDeleteId(null);
       setFlag((prev) => !prev);
     } catch (error) {
-      toast.error("Failed to delete products");
+      toast.error("Failed to delete brands");
     } finally {
       setIsActionLoading(false);
       setShowConfirmDialog(false);
@@ -198,7 +154,6 @@ export default function Products() {
     }
   };
 
-  /* -------------------------- PAGINATION / FILTER ---------------------- */
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       setPagination((prev) => ({ ...prev, currentPage: newPage }));
@@ -219,34 +174,27 @@ export default function Products() {
   };
 
   const getConfirmDialogDescription = () => {
-    const count = singleDeleteId ? 1 : selectedIds.length;
-    return `Are you sure you want to delete ${count} product${count > 1 ? "s" : ""}? This action cannot be undone.`;
+    if (singleDeleteId) {
+      return "Are you sure you want to delete this brand? This action cannot be undone.";
+    }
+    return `Are you sure you want to delete ${selectedIds.length} selected brand(s)? This action cannot be undone.`;
   };
 
   return (
     <div className="space-y-4 sm:space-y-6 p-4">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold">Products</h2>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => router.push("/admin/products/create")}>
-            Add New Product
-          </Button>
-          {/* Optional: Keep bulk import if you have it */}
-          {/* <Button onClick={() => router.push("/admin/products/bulk-import")}>
-            Bulk Import CSV
-          </Button> */}
-        </div>
+        <h2 className="text-xl sm:text-2xl font-bold">Brands</h2>
+        <Button onClick={() => router.push("/admin/brands/create")}>
+          Add New Brand
+        </Button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
         <Input
-          placeholder="Search by name, brand, model..."
+          placeholder="Search by name"
           value={filters.search}
           onChange={(e) => handleFilterChange("search", e.target.value)}
         />
-
         <Select value={filters.sort} onValueChange={(v) => handleFilterChange("sort", v)}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Sort by" />
@@ -254,11 +202,8 @@ export default function Products() {
           <SelectContent>
             <SelectItem value="id">ID</SelectItem>
             <SelectItem value="name">Name</SelectItem>
-            <SelectItem value="regularPrice">Regular Price</SelectItem>
-            <SelectItem value="createdAt">Created Date</SelectItem>
           </SelectContent>
         </Select>
-
         <Select value={filters.order} onValueChange={(v) => handleFilterChange("order", v)}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Order" />
@@ -270,20 +215,18 @@ export default function Products() {
         </Select>
       </div>
 
-      {/* Bulk Actions */}
       {selectedIds.length > 0 && (
         <div className="flex gap-2">
           <Button
             variant="destructive"
-            onClick={handleBulkDelete}
+            onClick={() => handleBulkAction("delete")}
             disabled={loading || isActionLoading}
           >
-            Delete Selected ({selectedIds.length})
+            Bulk Delete ({selectedIds.length})
           </Button>
         </div>
       )}
 
-      {/* Table */}
       {loading ? (
         <div className="flex justify-center py-8">
           <LoadingSpinner size="lg" />
@@ -296,56 +239,45 @@ export default function Products() {
                 <TableRow>
                   <TableHead className="w-[50px]">
                     <Checkbox
-                      checked={selectedIds.length === products.length && products.length > 0}
+                      checked={selectedIds.length === brands.length && brands.length > 0}
                       onCheckedChange={handleSelectAll}
-                      disabled={loading}
                     />
                   </TableHead>
                   {columns.slice(1).map((col) => (
-                    <TableHead key={col.key} className="whitespace-nowrap">
-                      {col.label}
-                    </TableHead>
+                    <TableHead key={col.key}>{col.label}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.length === 0 ? (
+                {brands.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center py-12">
+                    <TableCell colSpan={columns.length} className="text-center py-8">
                       <div className="flex flex-col items-center">
-                        <AlertCircle className="h-12 w-12 text-gray-400 mb-4" />
-                        <p className="text-lg text-gray-600">No products found</p>
+                        <AlertCircle className="h-12 w-12 text-gray-500 mb-4" />
+                        <p className="text-lg text-gray-600">No brands found</p>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  products.map((row) => (
-                    <TableRow key={row.id}>
+                  brands.map((brand) => (
+                    <TableRow key={brand.id}>
                       <TableCell>
                         <Checkbox
-                          checked={selectedIds.includes(row.id)}
-                          onCheckedChange={(checked) => handleSelectRow(row.id, checked)}
+                          checked={selectedIds.includes(brand.id)}
+                          onCheckedChange={(checked) => handleSelectRow(brand.id, checked)}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{row.id}</TableCell>
-                      <TableCell>{row.name}</TableCell>
-                      <TableCell>{row.brand?.name || "-"}</TableCell>
-                      <TableCell>{row.model?.name || "-"}</TableCell>
-                      <TableCell>{row.productType?.name || "-"}</TableCell>
-                      <TableCell>{row.color || "-"}</TableCell>
-                      <TableCell>${row.regularPrice}</TableCell>
+                      <TableCell>{brand.id}</TableCell>
+                      <TableCell>{brand.name}</TableCell>
+                      <TableCell>{brand.models?.length || 0}</TableCell>
+                      <TableCell>{brand.products?.length || 0}</TableCell>
                       <TableCell>
-                        {row.salePrice !== null ? `$${row.salePrice}` : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {columns.find((c) => c.key === "stock").render(row, {
-                          onToggleStock: handleToggleStock,
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        {columns.find((c) => c.key === "actions").render(row, {
-                          onView: handleViewProduct,
-                          onDelete: handleDeleteProduct,
+                        {columns.find((c) => c.key === "actions").render(brand, {
+                          onDelete: (id) => {
+                            setSingleDeleteId(id);
+                            setPendingAction("delete");
+                            setShowConfirmDialog(true);
+                          },
                         })}
                       </TableCell>
                     </TableRow>
@@ -355,14 +287,13 @@ export default function Products() {
             </Table>
           </div>
 
-          {/* Pagination */}
-          {products.length > 0 && (
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+          {brands.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
               <div className="flex items-center space-x-2 text-sm">
                 <p>
                   Showing {(pagination.currentPage - 1) * pagination.limit + 1} -{" "}
                   {Math.min(pagination.currentPage * pagination.limit, pagination.totalItems)} of{" "}
-                  {pagination.totalItems} products
+                  {pagination.totalItems} Brands
                 </p>
                 <Select value={pagination.limit.toString()} onValueChange={handleLimitChange}>
                   <SelectTrigger className="w-[100px]">
@@ -377,11 +308,10 @@ export default function Products() {
                 </Select>
                 <p>per page</p>
               </div>
-
-              <div className="flex items-center gap-2">
+              <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
-                  disabled={pagination.currentPage === 1 || loading}
+                  disabled={pagination.currentPage === 1}
                   onClick={() => handlePageChange(pagination.currentPage - 1)}
                 >
                   Previous
@@ -391,7 +321,7 @@ export default function Products() {
                 </span>
                 <Button
                   variant="outline"
-                  disabled={pagination.currentPage === pagination.totalPages || loading}
+                  disabled={pagination.currentPage === pagination.totalPages}
                   onClick={() => handlePageChange(pagination.currentPage + 1)}
                 >
                   Next
@@ -402,26 +332,17 @@ export default function Products() {
         </>
       )}
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Delete</DialogTitle>
             <DialogDescription>{getConfirmDialogDescription()}</DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmDialog(false)}
-              disabled={isActionLoading}
-            >
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowConfirmDialog(false)} disabled={isActionLoading}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmBulkAction}
-              disabled={isActionLoading}
-            >
+            <Button variant="destructive" onClick={confirmBulkAction} disabled={isActionLoading}>
               {isActionLoading ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
