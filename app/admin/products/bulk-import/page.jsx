@@ -1,5 +1,5 @@
 'use client';
-
+import Papa from "papaparse";
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -27,42 +27,48 @@ export default function BulkImportPage() {
   };
 
   const downloadSample = () => {
-    const csvContent = `Brand,Name,Stock,Sale Price,Regular Price\nSamsung,Galaxy S21,100,45000,50000\nSony,TV 55 Inch,50,120000,135000`;
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'sample_products.csv';
-    link.click();
-    URL.revokeObjectURL(url);
-  };
+  const csvContent = `Brand,Model,Type,Name,Color,Stock,Sale Price,Regular Price
+Yamaha,Drive2,Enclosure,3 x 4 Universal Enclosure,Red,10,1500,1800
+EZGO,TXT,Accessories,Seat Cover,,25,120,150
+Club Car,Onward,Hard Goods,Battery Charger,,5,850,950
+`;
+
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = "sample_products.csv";
+  link.click();
+
+  URL.revokeObjectURL(url);
+};
+
 
   const onDrop = useCallback((acceptedFiles) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const csv = event.target.result;
-        const lines = csv.split('\n').filter((line) => line.trim() !== '');
-        const parsedHeaders = lines[0].split(',').map((h) => h.trim());
-        
-        const parsedData = lines.slice(1).map((line) => {
-          const values = line.split(',').map((v) => v.trim());
-          const row = {};
-          parsedHeaders.forEach((h, i) => {
-            if (h !== 'S no') {
-              row[h] = i < values.length ? values[i] : '';
-            }
-          });
-          return row;
-        }).filter((row) => row.Name || row.name);
+  const file = acceptedFiles[0];
+  if (!file) return;
 
-        setHeaders(parsedHeaders.filter(h => h !== 'S no'));
-        setCsvData(parsedData);
-      };
-      reader.readAsText(file);
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    delimiter: "", // auto-detects comma or tab
+    complete: (results) => {
+      const data = results.data.filter(
+        (row) => row.Name || row.name
+      );
+
+      setHeaders(results.meta.fields.filter(h => h !== "S no"));
+      setCsvData(data);
+    },
+    error: (err) => {
+      console.error("CSV Parse Error:", err);
     }
-  }, []);
+  });
+}, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -81,38 +87,17 @@ export default function BulkImportPage() {
   };
 
   const handleBulkUpload = async () => {
-    const productsData = csvData
-  .map((row) => ({
-    name: row.Name || row.name || '',
-    stock: parseInt(row.Stock || row.stock || '0', 10),
+    const productsData = csvData.map((row) => ({
+  name: row.Name,
+  brand: row.Brand,
+  model: row.Model,
+  type: row.Type,
+  color: row.Color || null,
+  stock: row.Stock,
+  salePrice: row["Sale Price"],
+  regularPrice: row["Regular Price"],
+}));
 
-    salePrice: parseFloat(
-      row['Sale Price'] ||
-      row['Sale price'] ||
-      row['sale price'] ||
-      row.salePrice ||
-      '0'
-    ),
-
-    regularPrice: parseFloat(
-      row['Regular Price'] ||
-      row['Regular price'] ||
-      row['regular price'] ||
-      row.regularPrice ||
-      '0'
-    ),
-
-    brand: row.Brand || row.brand || '',
-  }))
-  .filter(
-    (p) =>
-      p.name &&
-      p.brand &&
-      !isNaN(p.salePrice) &&
-      !isNaN(p.regularPrice) &&
-      p.salePrice > 0 &&
-      p.regularPrice > 0
-  );
 
 
     if (productsData.length === 0) {
@@ -128,12 +113,13 @@ export default function BulkImportPage() {
 
       for (let i = 0; i < productsData.length; i += batchSize) {
         const batch = productsData.slice(i, i + batchSize);
-        const response = await api.post('/bulk-create-products', {
+        const response = await api.post('/products/import-csv', {
           products: batch,
         });
 
-        createdCount += response.data.created.length;
-        skippedCount += response.data.skipped.length;
+        createdCount += response.data.created;
+        skippedCount += response.data.skipped;
+
         setProgress(Math.round(((i + batchSize) / productsData.length) * 100));
       }
 

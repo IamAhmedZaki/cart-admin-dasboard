@@ -233,9 +233,9 @@ export default function Products() {
             Add New Product
           </Button>
           {/* Optional: Keep bulk import if you have it */}
-          {/* <Button onClick={() => router.push("/admin/products/bulk-import")}>
+          <Button onClick={() => router.push("/admin/products/bulk-import")}>
             Bulk Import CSV
-          </Button> */}
+          </Button>
         </div>
       </div>
 
