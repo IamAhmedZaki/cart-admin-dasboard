@@ -93,7 +93,37 @@ export default function Sidebar() {
         },
       ],
     },
-   
+    
+
+    {
+      section: 'DealerShip Management',
+      items: [
+        {
+          name: 'Dealership Settings',
+          path: '/admin/dealer-settings',
+          icon: UserRoundCog,
+          subItems: [
+            { name: 'Dealership Requests', path: '/admin/dealership-requests/list' },
+          ],
+        },
+      ],
+    },
+    
+    {
+      section: 'User Management',
+      items: [
+        {
+          name: 'User Settings',
+          path: '/admin/user-settings',
+          icon: UserRoundCog,
+          subItems: [
+            { name: 'Create User', path: '/admin/user-settings/create' },
+            { name: 'User List', path: '/admin/user-settings/list' },
+          ],
+        },
+      ],
+    },
+
     {
       section: 'Account Settings',
       items: [
@@ -108,6 +138,7 @@ export default function Sidebar() {
         },
       ],
     },
+    
   ];
 
   return (
