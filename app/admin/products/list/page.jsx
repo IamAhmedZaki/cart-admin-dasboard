@@ -27,6 +27,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
+
+
+
 const columns = [
   { key: "checkbox", label: "" },
   { key: "id", label: "ID" },
@@ -77,7 +80,6 @@ const columns = [
     ),
   },
 ];
-
 export default function Products() {
   const router = useRouter();
   const [products, setProducts] = useState([]);
@@ -134,6 +136,8 @@ export default function Products() {
   const handleViewProduct = (id) => {
     router.push(`/admin/products/${id}`);
   };
+  
+  
 
   const handleDeleteProduct = async (id) => {
     setSingleDeleteId(id);
