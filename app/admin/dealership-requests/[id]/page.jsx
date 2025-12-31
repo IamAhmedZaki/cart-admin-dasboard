@@ -34,7 +34,7 @@ export default function DealerRegistrationDetails() {
     const fetchDealer = async () => {
       if (!id) return;
       try {
-        const res = await api.get(`/dealer-registrations/${id}`);
+        const res = await api.get(`/dealer-registration/${id}`);
         const data = res.data;
 
         // Parse JSON fields if stored as strings
@@ -52,7 +52,7 @@ export default function DealerRegistrationDetails() {
         setEditedDealer({ ...data });
       } catch (error) {
         toast.error("Failed to load dealer registration");
-        router.push("/admin/dealer-registrations");
+        router.push("/admin/dealership-requests/list");
       } finally {
         setLoading(false);
       }
@@ -70,7 +70,7 @@ export default function DealerRegistrationDetails() {
     setIsSubmitting(true);
     try {
       const updates = {};
-      const fields = ["isApproved", "title", "mobile", "fax"];
+      const fields = ["status", "title", "mobile", "fax"];
 
       fields.forEach((field) => {
         if (editedDealer[field] !== dealer[field]) {
@@ -83,11 +83,11 @@ export default function DealerRegistrationDetails() {
         return;
       }
 
-      await api.put(`/dealer-registrations/${id}`, updates);
+      await api.put(`/dealer-registration/${id}`, updates);
 
       toast.success("Dealer registration updated successfully");
       setHasChanges(false);
-      router.push("/admin/dealer-registrations");
+      router.push("/admin/dealership-requests/list");
     } catch (error) {
       toast.error("Failed to update dealer registration");
     } finally {
@@ -99,7 +99,7 @@ export default function DealerRegistrationDetails() {
     if (hasChanges) {
       setShowCancelConfirm(true);
     } else {
-      router.push("/admin/dealer-registrations");
+      router.push("/admin/dealership-requests/list");
     }
   };
 
@@ -110,8 +110,8 @@ export default function DealerRegistrationDetails() {
     <div className="space-y-6 p-6">
      <div className="flex justify-between items-center">
   <h2 className="text-2xl font-bold">Dealer Registration: {dealer.companyName}</h2>
-  <Badge variant={dealer.isApproved ? "default" : "secondary"}>
-    {dealer.isApproved ? "Approved" : "Pending"}
+  <Badge variant={dealer.status=='approved' ? "default" : "secondary"}>
+    {dealer.status}
   </Badge>
 </div>
 
@@ -198,8 +198,8 @@ export default function DealerRegistrationDetails() {
 <div>
   <Label>Approval Status</Label>
   <Select
-    value={editedDealer.isApproved ? "approved" : "pending"}
-    onValueChange={(value) => handleChange("isApproved", value === "approved")}
+    value={editedDealer.status}
+    onValueChange={(value) => handleChange("status", value)}
     disabled={isSubmitting}
   >
     <SelectTrigger>
@@ -208,6 +208,7 @@ export default function DealerRegistrationDetails() {
     <SelectContent>
       <SelectItem value="pending">Pending</SelectItem>
       <SelectItem value="approved">Approved</SelectItem>
+      <SelectItem value="rejected">Rejected</SelectItem>
     </SelectContent>
   </Select>
 </div>
@@ -256,7 +257,7 @@ export default function DealerRegistrationDetails() {
           <p>You have unsaved changes. Are you sure you want to leave?</p>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowCancelConfirm(false)}>Stay</Button>
-            <Button onClick={() => router.push("/admin/dealer-registrations")}>Leave</Button>
+            <Button onClick={() => router.push("/admin/dealership-requests/list")}>Leave</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

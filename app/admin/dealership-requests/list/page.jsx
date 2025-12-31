@@ -51,19 +51,24 @@ const columns = [
   { key: "location", label: "Location" },
   { key: "showroom", label: "Showroom" },
   {
-    key: "isApproved",
+    key: "status",
     label: "Status",
-    render: (row, { onToggleApproval }) => (
-      <div className="flex items-center gap-3">
-        <Switch
-          checked={row.isApproved}
-          onCheckedChange={(checked) => onToggleApproval(row.id, checked)}
-          on
-        />
-        <span className="text-sm font-medium">
-          {row.isApproved ? "Approved" : "Pending"}
-        </span>
-      </div>
+    render: (row) => (
+      <Badge
+        variant={
+          row.status === "approved"
+            ? "default"
+            : row.status === "rejected"
+            ? "destructive"
+            : "secondary"
+        }
+      >
+        {row.status=='approved'
+          ? row.status.charAt(0).toUpperCase() + row.status.slice(1)
+          : row.status=='rejected'
+          ? row.status.charAt(0).toUpperCase() + row.status.slice(1)
+          : "Pending"}
+      </Badge>
     ),
   },
   {
@@ -142,7 +147,7 @@ export default function DealerRegistrations() {
   }, [pagination.currentPage, pagination.limit, filters, flag]);
 
   const handleViewDealer = (id) => {
-    router.push(`/admin/dealer-registrations/${id}`);
+    router.push(`/admin/dealership-requests/${id}`);
   };
 
   const handleDeleteDealer = (id) => {
@@ -361,11 +366,10 @@ export default function DealerRegistrations() {
                       </TableCell>
                       <TableCell>
                         {columns
-                          .find((c) => c.key === "isApproved")
-                          .render(row, {
-                            onToggleApproval: handleToggleApproval,
-                          })}
+                          .find((c) => c.key === "status")
+                          ?.render(row)}
                       </TableCell>
+
                       <TableCell>
                         {columns
                           .find((c) => c.key === "actions")
