@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import api from "@/lib/api";
 import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner";
+import { Switch } from "@/components/ui/switch";
 
 export default function CustomerDetails() {
   const router = useRouter();
@@ -34,14 +35,14 @@ export default function CustomerDetails() {
       if (!id) return;
 
       try {
-        const res = await api.get(`/customers/${id}`);
+        const res = await api.get(`/customer/${id}`);
         const cust = res.data; // assuming response is { id, fullName, email, createdAt, updatedAt, isActive }
 
         setCustomer(cust);
         setEditedCustomer({ ...cust });
       } catch (error) {
         toast.error("Failed to load customer");
-        router.push("/admin/customers");
+        router.push("/admin/user-settings/list");
       } finally {
         setLoading(false);
       }
@@ -93,11 +94,11 @@ export default function CustomerDetails() {
         return;
       }
 
-      await api.put(`/customers/${id}`, updates);
+      await api.put(`/customer/${id}`, updates);
 
       toast.success("Customer updated successfully");
       setHasChanges(false);
-      router.push("/admin/customers");
+      router.push("/admin/user-settings/list");
     } catch (error) {
       toast.error(error.message || "Failed to update customer");
     } finally {

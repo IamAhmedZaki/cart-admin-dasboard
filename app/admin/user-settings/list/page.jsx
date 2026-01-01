@@ -102,7 +102,7 @@ export default function Customers() {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/customers", {
+      const res = await api.get("/customer-pagination", {
         params: {
           page: pagination.currentPage,
           limit: pagination.limit,
@@ -128,7 +128,7 @@ export default function Customers() {
 
   /* --------------------------- BASIC ACTIONS --------------------------- */
   const handleViewCustomer = (id) => {
-    router.push(`/admin/customers/${id}`);
+    router.push(`/admin/user-settings/${id}`);
   };
 
   const handleDeleteCustomer = async (id) => {
@@ -139,7 +139,7 @@ export default function Customers() {
 
   const handleToggleActive = async (id, isActive) => {
     try {
-      await api.patch(`/customers/${id}`, { isActive });
+      await api.patch(`/customer/${id}`, { isActive });
       toast.success("Customer status updated");
       setFlag(!flag);
     } catch {
