@@ -125,6 +125,20 @@ export default function Sidebar() {
     },
 
     {
+      section: 'Order Settings',
+      items: [
+        {
+          name: 'Order Settings',
+          path: '/admin/web-settings',
+          icon: UserRoundCog,
+          subItems: [
+            { name: 'Order List', path: '/admin/orders/list' },
+            
+          ],
+        },
+      ],
+    },
+    {
       section: 'Account Settings',
       items: [
         {
