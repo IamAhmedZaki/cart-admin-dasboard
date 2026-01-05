@@ -35,7 +35,7 @@ const columns = [
   {
     key: "actions",
     label: "Actions",
-    render: (row, { onDelete }) => (
+    render: (row, { onDelete,onView }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
@@ -48,6 +48,12 @@ const columns = [
             className="text-red-600"
           >
             Delete
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => onView(row.id)}
+            className="text-black-600"
+          >
+            View/Edit
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -134,6 +140,21 @@ export default function Brands() {
     setSingleDeleteId(null);
     setShowConfirmDialog(true);
   };
+
+  const handleEditBrand = (id) => {
+  toast.promise(
+    new Promise((resolve) => {
+      router.push(`/admin/brands/${id}`);
+      // Small delay to allow navigation to start
+      setTimeout(resolve, 300);
+    }),
+    {
+      loading: "Opening edit page...",
+      success: "Edit page loaded",
+      error: "Failed to navigate",
+    }
+  );
+};
 
   const confirmBulkAction = async () => {
     if (!pendingAction || pendingAction !== "delete") return;
@@ -277,6 +298,9 @@ export default function Brands() {
                             setSingleDeleteId(id);
                             setPendingAction("delete");
                             setShowConfirmDialog(true);
+                          },
+                          onView: (id) => {
+                           handleEditBrand(id)
                           },
                         })}
                       </TableCell>
