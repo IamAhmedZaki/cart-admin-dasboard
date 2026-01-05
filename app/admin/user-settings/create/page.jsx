@@ -23,7 +23,7 @@ import {
 import { toast } from "sonner";
 import api from "@/lib/api";
 
-// Zod schema matching the Prisma Customer model
+// Zod schema matching the Prisma customers model
 const customerSchema = z.object({
   fullName: z.string().min(1, "Full name is required").trim(),
   email: z.string().email("Invalid email address").trim(),
@@ -35,14 +35,14 @@ const customerSchema = z.object({
       "Password must contain at least one lowercase letter, one uppercase letter, and one number"
     ),
 
-  // Billing Address (all required in your model – adjust if some should be optional)
+  // Billing Address
   billingStreet: z.string().min(1, "Billing street is required"),
   billingCity: z.string().min(1, "Billing city is required"),
   billingState: z.string().min(1, "Billing state is required"),
   billingZip: z.string().min(1, "Billing ZIP code is required"),
   billingCountry: z.string().min(1, "Billing country is required"),
 
-  // Commercial Address (all required in your model – adjust if needed)
+  // Commercial Address
   commercialStreet: z.string().min(1, "Commercial street is required"),
   commercialCity: z.string().min(1, "Commercial city is required"),
   commercialState: z.string().min(1, "Commercial state is required"),
@@ -50,11 +50,10 @@ const customerSchema = z.object({
   commercialCountry: z.string().min(1, "Commercial country is required"),
 });
 
-
 export default function AddCustomer() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<CustomerFormData>({
+  const form = useForm({
     resolver: zodResolver(customerSchema),
     defaultValues: {
       fullName: "",
@@ -92,7 +91,7 @@ export default function AddCustomer() {
         commercialCountry: data.commercialCountry.trim(),
       };
 
-      await api.post("/create-customer", payload);
+      await api.post("/customer", payload);
 
       toast.success("Customer created successfully!");
       form.reset();
