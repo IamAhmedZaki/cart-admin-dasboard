@@ -94,6 +94,10 @@ Club Car,Onward,Hard Goods,Battery Charger,,5,850,950
   type: row.Type,
   color: row.Color || null,
   stock: row.Stock,
+  imageOne: row.imageOne,
+  imageTwo: row.imageTwo,
+  imageThree: row.imageThree,
+  imageFour: row.imageFour,
   salePrice: row["Sale Price"],
   regularPrice: row["Regular Price"],
 }));
