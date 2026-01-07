@@ -5,9 +5,21 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner";
@@ -115,11 +127,11 @@ export default function ProductDetails() {
       processedValue = value === "" ? null : parseInt(value, 10);
       if (field === "brandId") {
         fetchModelsForBrand(processedValue);
-        setEditedProduct(prev => ({ ...prev, modelId: null }));
+        setEditedProduct((prev) => ({ ...prev, modelId: null }));
       }
     }
 
-    setEditedProduct(prev => ({ ...prev, [field]: processedValue }));
+    setEditedProduct((prev) => ({ ...prev, [field]: processedValue }));
     setHasChanges(true);
   };
 
@@ -128,19 +140,20 @@ export default function ProductDetails() {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setImagePreviews(prev => ({ ...prev, [field]: reader.result }));
+      setImagePreviews((prev) => ({ ...prev, [field]: reader.result }));
+      
       setMainImage(reader.result); // Show new image as main
     };
     reader.readAsDataURL(file);
 
-    setImageFiles(prev => ({ ...prev, [field]: file }));
+    setImageFiles((prev) => ({ ...prev, [field]: file }));
     setHasChanges(true);
   };
 
   const removeImage = (field) => {
-    setImagePreviews(prev => ({ ...prev, [field]: null }));
-    setImageFiles(prev => ({ ...prev, [field]: null }));
-    setEditedProduct(prev => ({ ...prev, [field]: null }));
+    setImagePreviews((prev) => ({ ...prev, [field]: null }));
+    setImageFiles((prev) => ({ ...prev, [field]: null }));
+    setEditedProduct((prev) => ({ ...prev, [field]: null }));
 
     // Update main image to next available
     const remaining = Object.entries(imagePreviews)
@@ -161,9 +174,18 @@ export default function ProductDetails() {
 
     try {
       const updates = {};
-      const fields = ["name", "stock", "regularPrice", "salePrice", "color", "brandId", "modelId", "typeId"];
+      const fields = [
+        "name",
+        "stock",
+        "regularPrice",
+        "salePrice",
+        "color",
+        "brandId",
+        "modelId",
+        "typeId",
+      ];
 
-      fields.forEach(field => {
+      fields.forEach((field) => {
         if (editedProduct[field] !== product[field]) {
           updates[field] = editedProduct[field];
         }
@@ -172,7 +194,7 @@ export default function ProductDetails() {
       // Handle image uploads (assuming your API supports multipart/form-data)
       const formData = new FormData();
 
-      Object.keys(imageFiles).forEach(key => {
+      Object.keys(imageFiles).forEach((key) => {
         if (imageFiles[key]) {
           formData.append(key, imageFiles[key]);
         } else if (imagePreviews[key] === null && product[key]) {
@@ -182,15 +204,22 @@ export default function ProductDetails() {
       });
 
       // Append other fields
-      Object.keys(updates).forEach(key => {
+      Object.keys(updates).forEach((key) => {
         formData.append(key, updates[key]);
       });
 
       // Validation
-      if (updates.regularPrice !== undefined && (updates.regularPrice === null || updates.regularPrice < 0)) {
+      if (
+        updates.regularPrice !== undefined &&
+        (updates.regularPrice === null || updates.regularPrice < 0)
+      ) {
         throw new Error("Regular price must be a positive number");
       }
-      if (updates.salePrice !== undefined && (updates.salePrice !== null && updates.salePrice < 0)) {
+      if (
+        updates.salePrice !== undefined &&
+        updates.salePrice !== null &&
+        updates.salePrice < 0
+      ) {
         throw new Error("Sale price must be a positive number");
       }
       if (updates.stock !== undefined && updates.stock < 0) {
@@ -207,7 +236,13 @@ export default function ProductDetails() {
       }
 
       // Only send if there are changes
-      if (Object.keys(updates).length > 0 || Object.values(imageFiles).some(f => f) || Object.values(imagePreviews).some((v, i) => v === null && product[Object.keys(imagePreviews)[i]])) {
+      if (
+        Object.keys(updates).length > 0 ||
+        Object.values(imageFiles).some((f) => f) ||
+        Object.values(imagePreviews).some(
+          (v, i) => v === null && product[Object.keys(imagePreviews)[i]]
+        )
+      ) {
         await api.put(`/product/${id}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
@@ -251,68 +286,6 @@ export default function ProductDetails() {
   return (
     <div className="space-y-8 p-6 max-w-6xl mx-auto">
       <h2 className="text-3xl font-bold">Edit Product: {product.name}</h2>
-
-      {/* Image Preview Section */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Product Images</h3>
-
-        {/* Main Image */}
-        <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden mb-6 border-2 border-dashed border-gray-300">
-          {mainImage ? (
-            <Image
-              src={`https://ecou1bc3kziqxgke.public.blob.vercel-storage.com/products/${mainImage}`}
-              alt="Main product"
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <ImageIcon className="w-16 h-16 mb-4" />
-              <p>No image selected</p>
-            </div>
-          )}
-        </div>
-
-        {/* Thumbnails */}
-        <div className="grid grid-cols-4 gap-4">
-          {["imageOne", "imageTwo", "imageThree", "imageFour"].map((field) => (
-            <div key={field} className="relative group">
-              <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-dashed border-gray-300">
-                {imagePreviews[field] ? (
-                  <>
-                    <Image
-                      src={`https://ecou1bc3kziqxgke.public.blob.vercel-storage.com/products/${imagePreviews[field]}`}
-                      alt={`Preview ${field}`}
-                      fill
-                      className="object-cover cursor-pointer hover:opacity-80 transition"
-                      onClick={() => setMainImage(imagePreviews[field])}
-                    />
-                    <button
-                      onClick={() => removeImage(field)}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
-                      disabled={isSubmitting}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </>
-                ) : (
-                  <label className="flex flex-col items-center justify-center h-full cursor-pointer hover:bg-gray-50">
-                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <span className="text-xs text-gray-500">Upload</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleImageChange(field, e.target.files[0])}
-                      disabled={isSubmitting}
-                    />
-                  </label>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
 
       {/* Product Details Form */}
       <Card className="p-6">
@@ -413,7 +386,9 @@ export default function ProductDetails() {
               step="0.01"
               min="0"
               value={editedProduct.regularPrice ?? ""}
-              onChange={(e) => handleFieldChange("regularPrice", e.target.value)}
+              onChange={(e) =>
+                handleFieldChange("regularPrice", e.target.value)
+              }
               disabled={isSubmitting}
             />
           </div>
@@ -444,10 +419,91 @@ export default function ProductDetails() {
             />
           </div>
         </div>
+      </Card>
+
+      {/* Image Preview Section */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Product Images</h3>
+
+        {/* Main Image */}
+        <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden mb-6 border-2 border-dashed border-gray-300">
+          {mainImage.startsWith("data:") ? (
+            <Image
+              src={mainImage}
+              alt="Main product"
+              fill
+              className="object-cover"
+            />
+          ) :mainImage? (
+            <Image
+              src={`https://ecou1bc3kziqxgke.public.blob.vercel-storage.com/products/${mainImage}`}
+              alt="Main product"
+              fill
+              className="object-cover"
+            />
+          ):(
+            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+              <ImageIcon className="w-16 h-16 mb-4" />
+              <p>No image selected</p>
+            </div>
+          )}
+        </div>
+
+        {/* Thumbnails */}
+        <div className="grid grid-cols-4 gap-4">
+          {["imageOne", "imageTwo", "imageThree", "imageFour"].map((field) => {
+            const previewSrc = imagePreviews[field]?.startsWith("data:")
+              ? imagePreviews[field]
+              : `https://ecou1bc3kziqxgke.public.blob.vercel-storage.com/products/${imagePreviews[field]}`;
+
+            return (
+              <div key={field} className="relative group">
+                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-dashed border-gray-300">
+                  {imagePreviews[field] ? (
+                    <>
+                      <Image
+                        src={previewSrc}
+                        alt={`Preview ${field}`}
+                        fill
+                        className="object-cover cursor-pointer hover:opacity-80 transition"
+                        onClick={() => setMainImage(imagePreviews[field])}
+                      />
+                      <button
+                        onClick={() => removeImage(field)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                        disabled={isSubmitting}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center h-full cursor-pointer hover:bg-gray-50">
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-xs text-gray-500">Upload</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) =>
+                          handleImageChange(field, e.target.files[0])
+                        }
+                        disabled={isSubmitting}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4 mt-10">
-          <Button variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!hasChanges || isSubmitting}>
@@ -464,7 +520,10 @@ export default function ProductDetails() {
           </DialogHeader>
           <p>You have unsaved changes. Are you sure you want to leave?</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCancelConfirm(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelConfirm(false)}
+            >
               Stay
             </Button>
             <Button onClick={confirmCancel}>Leave</Button>

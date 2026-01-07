@@ -24,26 +24,26 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { X, Upload, Image as ImageIcon } from "lucide-react";
 
-// Zod schema based on actual Product model
+// Updated schema to include images (files)
 const productSchema = z.object({
   name: z.string().min(1, "Product name is required").trim(),
   regularPrice: z.coerce.number().min(0.01, "Regular price must be greater than 0"),
   salePrice: z.coerce.number().min(0).optional(),
-  stock: z.coerce.number().int().min(0).optional().default(0),
+  stock: z.coerce.number().int().min(0).optional(),
   brandId: z.string().min(1, "Brand is required"),
   modelId: z.string().min(1, "Model is required"),
   typeId: z.string().min(1, "Product type is required"),
   color: z.string().optional().nullable(),
-}).refine((data) => {
-  // Color is required only if type is Enclosure
-  if (data.typeId) {
-    // We'll check this after loading types, but for safety:
-    // In practice, you can enhance this with actual type name if needed
-    return true; // We'll handle conditional requirement in UI + server
-  }
-  return true;
-}, { message: "Color is required for Enclosure products", path: ["color"] });
+  images: z
+    .array(z.instanceof(File))
+    .max(4, "Maximum 4 images allowed")
+    .optional()
+    .refine((files) => files === undefined || files.length > 0, {
+      message: "At least one image is recommended",
+    }),
+});
 
 export default function AddProduct() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +53,7 @@ export default function AddProduct() {
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingTypes, setLoadingTypes] = useState(true);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   const form = useForm({
     resolver: zodResolver(productSchema),
@@ -65,10 +66,26 @@ export default function AddProduct() {
       modelId: "",
       typeId: "",
       color: "",
+      images: [],
     },
   });
 
   const watchedTypeId = form.watch("typeId");
+  const watchedImages = form.watch("images");
+
+  // Update image previews when files change
+  useEffect(() => {
+    if (!watchedImages || watchedImages.length === 0) {
+      setImagePreviews([]);
+      return;
+    }
+
+    const previews = watchedImages.map((file) => URL.createObjectURL(file));
+    setImagePreviews(previews);
+
+    // Cleanup old object URLs
+    return () => previews.forEach((url) => URL.revokeObjectURL(url));
+  }, [watchedImages]);
 
   // Fetch Brands
   useEffect(() => {
@@ -113,9 +130,6 @@ export default function AddProduct() {
       setLoadingModels(true);
       try {
         const res = await api.get(`/brands/${watchedBrandId}`);
-        // Or: `/models?brandId=${watchedBrandId}`
-        console.log(res);
-        
         setModels(res.data.models || res.data || []);
       } catch (error) {
         toast.error("Failed to load models for this brand");
@@ -130,37 +144,55 @@ export default function AddProduct() {
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
-    try {
-      const payload = {
-        name: data.name.trim(),
-        regularPrice: parseFloat(data.regularPrice),
-        salePrice: data.salePrice ? parseFloat(data.salePrice) : null,
-        stock: data.stock ? parseInt(data.stock) : 0,
-        brandId: Number(data.brandId),
-        modelId: Number(data.modelId),
-        typeId: Number(data.typeId),
-        color: data.color || null,
-      };
 
-      await api.post("/create-product", payload); // assuming endpoint is /products
+    try {
+      const formData = new FormData();
+
+      // Append text fields
+      formData.append("name", data.name.trim());
+      formData.append("regularPrice", parseFloat(data.regularPrice));
+      if (data.salePrice) formData.append("salePrice", parseFloat(data.salePrice));
+      formData.append("stock", data.stock ? parseInt(data.stock) : 0);
+      formData.append("brandId", Number(data.brandId));
+      formData.append("modelId", Number(data.modelId));
+      formData.append("typeId", Number(data.typeId));
+      if (data.color) formData.append("color", data.color);
+
+      // Append images (up to 4)
+      if (data.images && data.images.length > 0) {
+        data.images.forEach((image, index) => {
+          formData.append("images", image); // backend should handle multiple files with same key
+        });
+      }
+
+      await api.post("/create-product", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       toast.success("Product created successfully!");
       form.reset();
+      setImagePreviews([]);
     } catch (error) {
       console.error("Error creating product:", error);
       toast.error(
         error.response?.data?.message ||
-          "Failed to create product. Please check all fields."
+          "Failed to create product. Please check all fields and images."
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Helper to check if selected type is Enclosure
   const isEnclosure = () => {
-    const selectedType = productTypes.find(t => String(t.id) === watchedTypeId);
+    const selectedType = productTypes.find((t) => String(t.id) === watchedTypeId);
     return selectedType?.name === "Enclosure";
+  };
+
+  const handleImageRemove = (index) => {
+    const newImages = watchedImages.filter((_, i) => i !== index);
+    form.setValue("images", newImages.length > 0 ? newImages : undefined);
   };
 
   return (
@@ -189,7 +221,6 @@ export default function AddProduct() {
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Regular Price */}
                   <FormField
                     control={form.control}
                     name="regularPrice"
@@ -197,19 +228,13 @@ export default function AddProduct() {
                       <FormItem>
                         <FormLabel>Regular Price (USD)</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="e.g. 12999.99"
-                            {...field}
-                          />
+                          <Input type="number" step="0.01" placeholder="12999.99" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  {/* Sale Price */}
                   <FormField
                     control={form.control}
                     name="salePrice"
@@ -220,7 +245,7 @@ export default function AddProduct() {
                           <Input
                             type="number"
                             step="0.01"
-                            placeholder="e.g. 11999.99 (leave empty if none)"
+                            placeholder="11999.99"
                             {...field}
                             value={field.value ?? ""}
                           />
@@ -231,7 +256,6 @@ export default function AddProduct() {
                   />
                 </div>
 
-                {/* Stock */}
                 <FormField
                   control={form.control}
                   name="stock"
@@ -242,11 +266,89 @@ export default function AddProduct() {
                         <Input
                           type="number"
                           min="0"
-                          placeholder="e.g. 5 (defaults to 0)"
+                          placeholder="5 (defaults to 0)"
                           {...field}
                           value={field.value ?? ""}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Images Upload */}
+                <FormField
+                  control={form.control}
+                  name="images"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Product Images (up to 4)</FormLabel>
+                      <FormControl>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            id="image-upload"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              if (files.length > 4) {
+                                toast.error("Maximum 4 images allowed");
+                                return;
+                              }
+                              const current = watchedImages || [];
+                              const combined = [...current, ...files].slice(0, 4);
+                              field.onChange(combined);
+                            }}
+                          />
+                          <label
+                            htmlFor="image-upload"
+                            className="cursor-pointer flex flex-col items-center gap-3"
+                          >
+                            <Upload className="w-10 h-10 text-gray-400" />
+                            <span className="text-sm text-gray-600">
+                              Click to upload images or drag & drop
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              PNG, JPG, GIF up to 10MB each
+                            </span>
+                          </label>
+                        </div>
+                      </FormControl>
+
+                      {/* Image Previews */}
+                      {imagePreviews.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                          {imagePreviews.map((preview, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={preview}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-48 object-cover rounded-lg border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleImageRemove(index)}
+                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <div className="text-center text-sm mt-1">
+                                Image {index + 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {imagePreviews.length === 0 && (
+                        <p className="text-sm text-gray-500 mt-2 text-center">
+                          <ImageIcon className="w-5 h-5 inline mr-1" />
+                          No images selected yet
+                        </p>
+                      )}
+
                       <FormMessage />
                     </FormItem>
                   )}
@@ -262,14 +364,16 @@ export default function AddProduct() {
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value);
-                          form.setValue("modelId", ""); // reset model
+                          form.setValue("modelId", "");
                         }}
                         value={field.value}
                         disabled={loadingBrands}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={loadingBrands ? "Loading brands..." : "Select a brand"} />
+                            <SelectValue
+                              placeholder={loadingBrands ? "Loading brands..." : "Select a brand"}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -285,7 +389,7 @@ export default function AddProduct() {
                   )}
                 />
 
-                {/* Model (cascading) */}
+                {/* Model */}
                 <FormField
                   control={form.control}
                   name="modelId"
@@ -335,8 +439,8 @@ export default function AddProduct() {
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value);
-                          if (value && !isEnclosure()) {
-                            form.setValue("color", ""); // clear color if not Enclosure
+                          if (!isEnclosure()) {
+                            form.setValue("color", "");
                           }
                         }}
                         value={field.value}
@@ -344,7 +448,9 @@ export default function AddProduct() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={loadingTypes ? "Loading types..." : "Select product type"} />
+                            <SelectValue
+                              placeholder={loadingTypes ? "Loading types..." : "Select product type"}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -360,7 +466,7 @@ export default function AddProduct() {
                   )}
                 />
 
-                {/* Color - Conditional for Enclosure */}
+                {/* Color - Only for Enclosure */}
                 {isEnclosure() && (
                   <FormField
                     control={form.control}
@@ -381,7 +487,6 @@ export default function AddProduct() {
                   />
                 )}
 
-                {/* Submit */}
                 <Button
                   type="submit"
                   className="w-full"
